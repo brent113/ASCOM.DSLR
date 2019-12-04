@@ -45,7 +45,7 @@ namespace ASCOM.DSLR.Classes
         private TraceLogger _tl;
 
 
-        public DigiCamControlCamera(TraceLogger tl, List<CameraModel> cameraModelHistory)  : base(cameraModelHistory)
+        public DigiCamControlCamera(TraceLogger tl, List<CameraModel> cameraModelHistory) : base(cameraModelHistory)
         {
             _tl = tl;
             DeviceManager = new CameraDeviceManager();
@@ -60,7 +60,7 @@ namespace ASCOM.DSLR.Classes
             Log.LogError += Log_LogError;
             Log.LogDebug += Log_LogError;
             Log.LogInfo += Log_LogError;
-            
+
         }
 
         public void AbortExposure()
@@ -70,13 +70,17 @@ namespace ASCOM.DSLR.Classes
 
         private void LogProperties(PropertyValue<long> properties)
         {
-            StringBuilder propsStr = new StringBuilder(properties.Name + ": ");
-            foreach (var p in properties.Values)
+            try
             {
-                propsStr.Append(p);
-                propsStr.Append(":");
+                StringBuilder propsStr = new StringBuilder(properties.Name + ": ");
+                foreach (var p in properties.Values)
+                {
+                    propsStr.Append(p);
+                    propsStr.Append(":");
+                }
+                _tl.LogMessage("Property values", propsStr.ToString());
             }
-            _tl.LogMessage("Property values", propsStr.ToString());
+            catch { }
         }
 
         public void ConnectCamera()
@@ -84,7 +88,7 @@ namespace ASCOM.DSLR.Classes
             DeviceManager.ConnectToCamera();
             var camera = DeviceManager.SelectedCameraDevice;
             LogCameraInfo(camera);
-          
+
         }
 
         private void LogCameraInfo(ICameraDevice camera)
@@ -123,7 +127,7 @@ namespace ASCOM.DSLR.Classes
 
         public override CameraModel ScanCameras()
         {
-            var cameraDevice= DeviceManager.SelectedCameraDevice;
+            var cameraDevice = DeviceManager.SelectedCameraDevice;
             var cameraModel = GetCameraModel(cameraDevice.DeviceName);
 
             return cameraModel;
@@ -151,7 +155,7 @@ namespace ASCOM.DSLR.Classes
         private string GetNearesetValue(PropertyValue<long> propertyValue, double value)
         {
             string nearest = propertyValue.Values.Select(v =>
-            { 
+            {
 
                 double doubleValue = ParseValue(v);
                 return new
@@ -160,11 +164,11 @@ namespace ASCOM.DSLR.Classes
                     DoubleValue = doubleValue,
                     Difference = Math.Abs(doubleValue - value)
                 };
-            }).Where(i=>i.DoubleValue>0).OrderBy(i => i.Difference).First().ValueStr;
+            }).Where(i => i.DoubleValue > 0).OrderBy(i => i.Difference).First().ValueStr;
 
             return nearest;
         }
-        
+
 
         DigiCamCanceledFlag _canceled = new DigiCamCanceledFlag();
         private double _duration;
@@ -173,22 +177,22 @@ namespace ASCOM.DSLR.Classes
         public void StartExposure(double Duration, bool Light)
         {
             _canceled.IsCanceled = false;
-            
+
             _startTime = DateTime.Now;
             _duration = Duration;
             var camera = DeviceManager.SelectedCameraDevice;
             camera.IsoNumber.Value = GetNearesetValue(camera.IsoNumber, Iso);
             camera.CompressionSetting.Value = camera.CompressionSetting.Values.SingleOrDefault(v => v.ToUpper() == "RAW");
             bool canBulb = camera.GetCapability(CapabilityEnum.Bulb);
-            if (Duration>30)
+            if (Duration > 30)
             {
-                int durationMsec = (int) (Duration * 1000);
+                int durationMsec = (int)(Duration * 1000);
                 if (UseExternalShutter)
                 {
                     ThreadPool.QueueUserWorkItem(state =>
                     {
                         var _serialPortShutter = new SerialPortShutterRelease(ExternalShutterPort);
-                        BulbExposure(durationMsec , _canceled, _serialPortShutter.OpenShutter, _serialPortShutter.CloseShutter);
+                        BulbExposure(durationMsec, _canceled, _serialPortShutter.OpenShutter, _serialPortShutter.CloseShutter);
                     });
                 }
                 else
@@ -202,7 +206,7 @@ namespace ASCOM.DSLR.Classes
             else
             {
                 camera.ShutterSpeed.Value = GetNearesetValue(camera.ShutterSpeed, Duration);
-                DeviceManager.SelectedCameraDevice.CapturePhoto();
+                DeviceManager.SelectedCameraDevice.CapturePhotoNoAf();
             }
         }
 
@@ -230,14 +234,14 @@ namespace ASCOM.DSLR.Classes
 
         public void StopExposure()
         {
-            AbortExposure();            
+            AbortExposure();
         }
- 
+
         private void Log_LogError(LogEventArgs e)
         {
             _tl.LogMessage(e.Message.ToString(), e.Exception?.Message);
         }
-    
+
         private void PhotoCaptured(PhotoCapturedEventArgs eventArgs)
         {
             _tl.LogMessage("Photo captured filename", eventArgs.FileName);
@@ -254,7 +258,7 @@ namespace ASCOM.DSLR.Classes
 
             string newFilePath = RenameFile(fileName, _duration, _startTime);
             ImageReady?.Invoke(this, new ImageReadyEventArgs(newFilePath));
-            
+
             eventArgs.CameraDevice.IsBusy = false;
         }
 
@@ -272,7 +276,7 @@ namespace ASCOM.DSLR.Classes
                 fileName = Path.ChangeExtension(fileName, "nef");
             }
 
-            return fileName;            
+            return fileName;
         }
 
         void DeviceManager_CameraDisconnected(ICameraDevice cameraDevice)
