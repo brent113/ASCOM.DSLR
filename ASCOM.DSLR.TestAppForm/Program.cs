@@ -1,5 +1,4 @@
 ﻿using ASCOM.DSLR.Classes;
-using CameraControl.Plugins.ExternalDevices;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,17 +20,17 @@ namespace ASCOM.DSLR
         [STAThread]
         static void Main()
         {
-            ExecuteCommand("--status --debug --timeout 3");
+            //ExecuteCommand("--status --debug --timeout 3");
 
-            var d = ParseStatus(File.ReadAllText(@"c:\git-vtorkalo\ASCOM.DSLR\testdata\status.txt"));
+            //var d = ParseStatus(File.ReadAllText(@"c:\git-vtorkalo\ASCOM.DSLR\testdata\status.txt"));
 
 
 
-            var p = new ImageDataProcessor();
+            //var p = new ImageDataProcessor();
 
-            var detector = new CameraModelDetector(p);
+            //var detector = new CameraModelDetector(p);
 
-            var data0 = p.ReadRaw(@"d:\ascomdev\git\ASCOM.DSLR\testdata\test.dng-0000.dng");
+            //var data0 = p.ReadRaw(@"\\hypernas\files\Documents\jesi\Pictures\ASCOM_DSLR\IMG_1s_200iso_0C_2019-12-07--17-40-59.NEF");
 
 
             

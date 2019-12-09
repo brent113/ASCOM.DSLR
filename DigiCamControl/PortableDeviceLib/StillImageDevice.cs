@@ -286,8 +286,9 @@ namespace PortableDeviceLib
             IPortableDevicePropVariantCollection propVariant =
               (IPortableDevicePropVariantCollection)new PortableDeviceTypesLib.PortableDevicePropVariantCollection();
 
-            foreach (uint parameter in parameters)
+            foreach (uint p in parameters)
             {
+                uint parameter = p;
                 tag_inner_PROPVARIANT vparam1 = new tag_inner_PROPVARIANT();
                 UintToPropVariant(parameter, out vparam1);
                 propVariant.Add(ref vparam1);

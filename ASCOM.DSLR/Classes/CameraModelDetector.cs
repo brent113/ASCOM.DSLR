@@ -29,7 +29,7 @@ namespace ASCOM.DSLR.Classes
             camera.Iso = 200;
             camera.StartExposure(1, true);
 
-            oSignalEvent.WaitOne(60*1000); 
+            oSignalEvent.WaitOne(20*1000); 
             oSignalEvent.Reset();
 
             CameraModel result = null;

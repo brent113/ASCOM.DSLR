@@ -239,7 +239,7 @@ namespace CameraControl.Devices
                 WiaDeviceManager.RegisterEvent(Conts.wiaEventDeviceConnected, "*");
                 WiaDeviceManager.RegisterEvent(Conts.wiaEventDeviceDisconnected, "*");
                 WiaDeviceManager.OnEvent += DeviceManager_OnEvent;
-                Log.Error("Wia initialized");
+                Log.Info("Wia initialized");
             }
             catch (Exception exception)
             {

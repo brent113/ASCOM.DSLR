@@ -49,6 +49,7 @@ namespace ASCOM.DSLR.Classes
         {
             _tl = tl;
             DeviceManager = new CameraDeviceManager();
+            DeviceManager.LoadWiaDevices = false;
             DeviceManager.CameraSelected += DeviceManager_CameraSelected;
             DeviceManager.CameraConnected += DeviceManager_CameraConnected;
             DeviceManager.PhotoCaptured += DeviceManager_PhotoCaptured;
@@ -239,7 +240,11 @@ namespace ASCOM.DSLR.Classes
 
         private void Log_LogError(LogEventArgs e)
         {
-            _tl.LogMessage(e.Message.ToString(), e.Exception?.Message);
+            try
+            {
+                _tl.LogMessage(e.Message.ToString(), e.Exception?.Message);
+            }
+            catch { }
         }
 
         private void PhotoCaptured(PhotoCapturedEventArgs eventArgs)

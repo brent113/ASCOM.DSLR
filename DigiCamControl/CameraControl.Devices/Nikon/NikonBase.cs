@@ -2303,7 +2303,7 @@ namespace CameraControl.Devices.Nikon
                 if (_eventIsbusy)
                     return;
                 _eventIsbusy = true;
-                //DeviceReady();
+                DeviceReady(); // TODO: BRS added 12/7, was commented out previously
                 MTPDataResponse response = ExecuteReadDataEx(CONST_CMD_GetEvent);
 
                 if (response.Data == null || response.Data.Length == 0)
