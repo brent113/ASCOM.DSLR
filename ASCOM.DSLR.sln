@@ -19,8 +19,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PortableDeviceLib", "DigiCa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestAscomForm", "TestAscomForm\TestAscomForm.csproj", "{5453E0B6-6CEC-4BDD-90E3-FDEAF83E3507}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASCOM.DSLR.TestAppForm", "\\hypernas\files\Documents\Programs\C#\ASCOM.DSLR\ASCOM.DSLR.TestAppForm\ASCOM.DSLR.TestAppForm.csproj", "{8E8D406C-1838-4914-867D-AB602D0EAF3E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -55,10 +53,6 @@ Global
 		{5453E0B6-6CEC-4BDD-90E3-FDEAF83E3507}.Debug|x86.Build.0 = Debug|x86
 		{5453E0B6-6CEC-4BDD-90E3-FDEAF83E3507}.Release|x86.ActiveCfg = Release|x86
 		{5453E0B6-6CEC-4BDD-90E3-FDEAF83E3507}.Release|x86.Build.0 = Release|x86
-		{8E8D406C-1838-4914-867D-AB602D0EAF3E}.Debug|x86.ActiveCfg = Debug|x86
-		{8E8D406C-1838-4914-867D-AB602D0EAF3E}.Debug|x86.Build.0 = Debug|x86
-		{8E8D406C-1838-4914-867D-AB602D0EAF3E}.Release|x86.ActiveCfg = Release|x86
-		{8E8D406C-1838-4914-867D-AB602D0EAF3E}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

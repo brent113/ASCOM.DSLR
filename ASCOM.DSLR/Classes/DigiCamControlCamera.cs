@@ -50,6 +50,7 @@ namespace ASCOM.DSLR.Classes
             _tl = tl;
             DeviceManager = new CameraDeviceManager();
             DeviceManager.LoadWiaDevices = false;
+            DeviceManager.DetectWebcams = false;
             DeviceManager.CameraSelected += DeviceManager_CameraSelected;
             DeviceManager.CameraConnected += DeviceManager_CameraConnected;
             DeviceManager.PhotoCaptured += DeviceManager_PhotoCaptured;
@@ -90,6 +91,13 @@ namespace ASCOM.DSLR.Classes
             var camera = DeviceManager.SelectedCameraDevice;
             LogCameraInfo(camera);
 
+            var cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == camera.DeviceName); //try get sensor params from history
+            if (cameraModel == null)
+            {
+                _cameraModel = new CameraModel();
+                _cameraModel.Name = camera.DeviceName;
+            }
+
         }
 
         private void LogCameraInfo(ICameraDevice camera)
@@ -128,10 +136,26 @@ namespace ASCOM.DSLR.Classes
 
         public override CameraModel ScanCameras()
         {
+            // Don't return the default fake device without connecting to something first.
+            if (DeviceManager.ConnectedDevices.Count == 0)
+            {
+                DeviceManager.ConnectToCamera();
+            }
+
             var cameraDevice = DeviceManager.SelectedCameraDevice;
             var cameraModel = GetCameraModel(cameraDevice.DeviceName);
 
-            return cameraModel;
+            var _cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == cameraModel.Name); //try get sensor params from history
+            if (_cameraModel == null)
+            {
+                _cameraModel = new CameraModel();
+                _cameraModel.Name = cameraModel.Name;
+            }
+            _cameraModel.ImageHeight = cameraModel.ImageHeight;
+            _cameraModel.ImageWidth = cameraModel.ImageWidth;
+            _cameraModel.SensorHeight = cameraModel.SensorHeight;
+            _cameraModel.SensorWidth = cameraModel.SensorWidth;
+            return _cameraModel;
         }
 
         private double ParseValue(string valueStr)
@@ -282,6 +306,16 @@ namespace ASCOM.DSLR.Classes
             }
 
             return fileName;
+        }
+
+        public int ImageWidth()
+        {
+            return 1;
+        }
+
+        public int ImageHeight()
+        {
+            return 1;
         }
 
         void DeviceManager_CameraDisconnected(ICameraDevice cameraDevice)

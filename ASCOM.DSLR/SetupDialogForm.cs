@@ -18,7 +18,7 @@ using System.IO.Ports;
 
 namespace ASCOM.DSLR
 {
-    [ComVisible(false)]					
+    [ComVisible(false)]
     public partial class SetupDialogForm : Form
     {
         public SetupDialogForm(CameraSettings settings)
@@ -32,7 +32,7 @@ namespace ASCOM.DSLR
         {
             Settings.TraceLog = chkTrace.Checked;
             Settings.CameraMode = (CameraMode)cbImageMode.SelectedItem;
-            
+
 
             Settings.IntegrationApi = (ConnectionMethod)cbIntegrationApi.SelectedItem;
 
@@ -99,19 +99,19 @@ namespace ASCOM.DSLR
             SetSelectedItem(cbImageMode, Settings.CameraMode);
 
             chkEnableBin.Checked = Settings.EnableBinning;
-            
+
             cbIntegrationApi.Items.Add(ConnectionMethod.CanonSdk);
             cbIntegrationApi.Items.Add(ConnectionMethod.BackyardEOS);
             cbIntegrationApi.Items.Add(ConnectionMethod.Nikon);
             cbIntegrationApi.Items.Add(ConnectionMethod.Pentax);
             SetSelectedItem(cbIntegrationApi, Settings.IntegrationApi);
-            
+
 
             cbBinningMode.Items.Add(BinningMode.Sum);
             cbBinningMode.Items.Add(BinningMode.Median);
             SetSelectedItem(cbBinningMode, Settings.BinningMode);
 
-            var isoValues = ISOValues.Values.Where(v => v.DoubleValue <= short.MaxValue && v.DoubleValue>0).Select(v => (short)v.DoubleValue);
+            var isoValues = ISOValues.Values.Where(v => v.DoubleValue <= short.MaxValue && v.DoubleValue > 0).Select(v => (short)v.DoubleValue);
             cbIso.DisplayMember = "display";
             cbIso.ValueMember = "value";
             cbIso.DataSource = isoValues.Select(v => new { value = v, display = v.ToString() }).ToArray();
@@ -122,7 +122,7 @@ namespace ASCOM.DSLR
             tbBackyardEosPort.Text = Settings.BackyardEosPort.ToString();
 
             chkUseExternalShutter.Checked = Settings.UseExternalShutter;
-            
+
             foreach (var port in SerialPort.GetPortNames())
             {
                 cbShutterPort.Items.Add(port);
@@ -150,12 +150,15 @@ namespace ASCOM.DSLR
                 folderBrowserDialog.SelectedPath = tbSavePath.Text;
             }
 
-            var thread = new Thread(new ParameterizedThreadStart(param => 
+            var thread = new Thread(new ParameterizedThreadStart(param =>
             {
-                if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK)
+                this.Invoke((Action)delegate
                 {
-                    Invoke((Action)delegate { tbSavePath.Text = folderBrowserDialog.SelectedPath; });
-                }
+                    if (folderBrowserDialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        tbSavePath.Text = folderBrowserDialog.SelectedPath;
+                    }
+                });
             }));
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
@@ -255,7 +258,7 @@ namespace ASCOM.DSLR
 
         private bool IsDigiCamControl()
         {
-            return cbIntegrationApi.SelectedItem !=null &&  (ConnectionMethod)cbIntegrationApi.SelectedItem == ConnectionMethod.Nikon;
+            return cbIntegrationApi.SelectedItem != null && (ConnectionMethod)cbIntegrationApi.SelectedItem == ConnectionMethod.Nikon;
         }
 
         private bool IsBeos()
@@ -275,7 +278,7 @@ namespace ASCOM.DSLR
 
         private void cbImageMode_SelectedIndexChanged(object sender, EventArgs e)
         {
-            
+
         }
 
         private void LiveViewModeChagned()
