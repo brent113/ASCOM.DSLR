@@ -172,12 +172,33 @@ namespace ASCOM.DSLR.Classes
                         value = 1 / value;
                     }
                 }
+                else if (valueStr.EndsWith("s"))
+                {
+                    double.TryParse(valueStr.TrimEnd('s'), out value);
+                }
             }
 
             return value;
         }
 
         private string GetNearesetValue(PropertyValue<long> propertyValue, double value)
+        {
+            string nearest = propertyValue.Values.Select(v =>
+            {
+
+                double doubleValue = ParseValue(v);
+                return new
+                {
+                    ValueStr = v,
+                    DoubleValue = doubleValue,
+                    Difference = Math.Abs(doubleValue - value)
+                };
+            }).Where(i => i.DoubleValue > 0).OrderBy(i => i.Difference).First().ValueStr;
+
+            return nearest;
+        }
+
+        private string GetNearesetShutter(PropertyValue<long> propertyValue, double value)
         {
             string nearest = propertyValue.Values.Select(v =>
             {
@@ -230,7 +251,7 @@ namespace ASCOM.DSLR.Classes
             }
             else
             {
-                camera.ShutterSpeed.Value = GetNearesetValue(camera.ShutterSpeed, Duration);
+                camera.ShutterSpeed.Value = GetNearesetShutter(camera.ShutterSpeed, Duration);
                 DeviceManager.SelectedCameraDevice.CapturePhotoNoAf();
             }
         }

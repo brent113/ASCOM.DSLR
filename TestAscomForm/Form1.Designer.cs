@@ -35,7 +35,6 @@ namespace ASCOM.DSLR
             this.labelDriverId = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.buttonCapture = new System.Windows.Forms.Button();
-            this.buttonReload = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -97,23 +96,11 @@ namespace ASCOM.DSLR
             this.buttonCapture.UseVisualStyleBackColor = true;
             this.buttonCapture.Click += new System.EventHandler(this.buttonCapture_Click);
             // 
-            // buttonReload
-            // 
-            this.buttonReload.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonReload.Location = new System.Drawing.Point(412, 160);
-            this.buttonReload.Name = "buttonReload";
-            this.buttonReload.Size = new System.Drawing.Size(95, 40);
-            this.buttonReload.TabIndex = 4;
-            this.buttonReload.Text = "Reload";
-            this.buttonReload.UseVisualStyleBackColor = true;
-            this.buttonReload.Click += new System.EventHandler(this.buttonReload_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(523, 410);
-            this.Controls.Add(this.buttonReload);
             this.Controls.Add(this.buttonCapture);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.labelDriverId);
@@ -137,7 +124,6 @@ namespace ASCOM.DSLR
         private System.Windows.Forms.Label labelDriverId;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button buttonCapture;
-        private System.Windows.Forms.Button buttonReload;
     }
 }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ASCOM.DSLR
@@ -86,29 +87,32 @@ namespace ASCOM.DSLR
                 showImage();
             }
         }
-
+        
         private void showImage()
         {
             int[,] rawimg = (int[,])driver.ImageArray;
             int X = driver.CameraXSize;
             int Y = driver.CameraYSize;
+            Rectangle R = new Rectangle(0, 0, X, Y);
 
-            Bitmap bitmap;
-            unsafe
+            // Prescale
+            int[] img = new int[X * Y];
+            for (int j = 0; j < Y; j++)
             {
-                fixed (int* intPtr = &rawimg[0, 0])
+                for (int i = 0; i < X; i++)
                 {
-                    bitmap = new Bitmap(3*X, 3*Y, X, PixelFormat.Format48bppRgb, new IntPtr(intPtr));
+                    img[j * X + i] = (byte)(rawimg[i, j] >> 6); // 14 -> 8
+                    img[j * X + i] = img[j * X + i] | img[j * X + i] << 8 | img[j * X + i] << 16;
                 }
             }
-            //bitmap.Save(@"C:\out.bmp");
+
+            Bitmap bitmap;
+            bitmap = new Bitmap(X, Y, PixelFormat.Format32bppRgb);
+            BitmapData BmpData = bitmap.LockBits(R, ImageLockMode.WriteOnly, bitmap.PixelFormat);
+            Marshal.Copy(img, 0, BmpData.Scan0, img.Length);
+            bitmap.UnlockBits(BmpData);
 
             pictureBox1.Image = bitmap;
-        }
-        
-        private void buttonReload_Click(object sender, EventArgs e)
-        {
-            showImage();
         }
     }
 }
