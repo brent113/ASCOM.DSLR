@@ -114,7 +114,7 @@ namespace ASCOM.DSLR.Classes
             return result;
         }
 
-        private void exif_parser_callback(IntPtr context, int tag, int type, int len, uint ord, IntPtr ifp)
+        private void Exif_parser_callback(IntPtr context, int tag, int type, int len, uint ord, IntPtr ifp)
         {
 
         }

@@ -6,7 +6,7 @@ namespace CameraControl.Devices.TransferProtocol.PtpIp
     public class CmdResponse:BaseCmd
     {
         public int Code { get; set; }
-        public uint TransactionID { get; set; }
+        public new uint TransactionID { get; set; }
         public uint[] Parameters { get; set; }
 
         public override void Read(Stream s)

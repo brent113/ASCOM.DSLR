@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ASCOM.DSLR.Classes
 {
@@ -15,7 +16,7 @@ namespace ASCOM.DSLR.Classes
         public string value;
     }
 
-    public class ExifToolWrapper : List<ExifTagItem>
+    internal class ExifToolWrapper : List<ExifTagItem>
     {
         #region public methods
 
@@ -201,11 +202,13 @@ namespace ASCOM.DSLR.Classes
             this.psi = new ProcessStartInfo(
                 Environment.ExpandEnvironmentVariables(program),
                 args.Replace("[command]", cmd)
-            );
-            this.psi.CreateNoWindow = true;
-            this.psi.UseShellExecute = false;
-            this.psi.RedirectStandardOutput = true;
-            this.psi.RedirectStandardError = true;
+            )
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
 
             Thread thread_ReadStandardError = new Thread(new ThreadStart(Thread_ReadStandardError));
             Thread thread_ReadStandardOut = new Thread(new ThreadStart(Thread_ReadStandardOut));

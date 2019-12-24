@@ -208,9 +208,9 @@ namespace CameraControl.Devices.Others
             try
             {
                 Device = deviceDescriptor.WiaDevice;
-                DeviceName = Device.Properties["Description"].get_Value();
-                Manufacturer = Device.Properties["Manufacturer"].get_Value();
-                SerialNumber = StaticHelper.GetSerial(Device.Properties["PnP ID String"].get_Value());
+                DeviceName = (string)Device.Properties["Description"].get_Value();
+                Manufacturer = (string)Device.Properties["Manufacturer"].get_Value();
+                SerialNumber = StaticHelper.GetSerial((string)Device.Properties["PnP ID String"].get_Value());
             }
             catch (Exception ex)
             {
@@ -270,7 +270,7 @@ namespace CameraControl.Devices.Others
                                 ShutterSpeed.AddValues(ShutterTable[(int) subTypeValue], (int) subTypeValue);
                         }
                         ShutterSpeed.ReloadValues();
-                        ShutterSpeed.SetValue(shutterProperty.get_Value());
+                        ShutterSpeed.SetValue((long)shutterProperty.get_Value());
                     }
                 }
                 catch (COMException)
@@ -289,7 +289,7 @@ namespace CameraControl.Devices.Others
                                 WhiteBalance.AddValues(WbTable[(int) subTypeValue], (int) subTypeValue);
                         }
                         WhiteBalance.ReloadValues();
-                        WhiteBalance.SetValue(wbProperty.get_Value());
+                        WhiteBalance.SetValue((long)wbProperty.get_Value());
                     }
                 }
                 catch (COMException)
@@ -331,7 +331,7 @@ namespace CameraControl.Devices.Others
                             ExposureCompensation.AddValues(s, (int) subTypeValue);
                         }
                         ExposureCompensation.ReloadValues();
-                        ExposureCompensation.SetValue(ecProperty.get_Value());
+                        ExposureCompensation.SetValue((long)ecProperty.get_Value());
                     }
                 }
                 catch (COMException)
@@ -350,7 +350,7 @@ namespace CameraControl.Devices.Others
                                 CompressionSetting.AddValues(CSTable[(int) subTypeValue], (int) subTypeValue);
                         }
                         CompressionSetting.ReloadValues();
-                        CompressionSetting.SetValue(csProperty.get_Value());
+                        CompressionSetting.SetValue((long)csProperty.get_Value());
                     }
                 }
                 catch (COMException)
@@ -369,7 +369,7 @@ namespace CameraControl.Devices.Others
                                 ExposureMeteringMode.AddValues(EMMTable[(int) subTypeValue], (int) subTypeValue);
                         }
                         ExposureMeteringMode.ReloadValues();
-                        ExposureMeteringMode.SetValue(emmProperty.get_Value());
+                        ExposureMeteringMode.SetValue((long)emmProperty.get_Value());
                     }
                 }
                 catch (COMException)
@@ -399,7 +399,7 @@ namespace CameraControl.Devices.Others
 
                 try
                 {
-                    Battery = Device.Properties[Conts.CONST_PROP_BatteryStatus].get_Value();
+                    Battery = (int)Device.Properties[Conts.CONST_PROP_BatteryStatus].get_Value();
                 }
                 catch (COMException)
                 {

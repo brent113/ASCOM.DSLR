@@ -1,10 +1,10 @@
 ﻿using ASCOM.DeviceInterface;
 using ASCOM.DSLR.Classes;
 using ASCOM.DSLR.Enums;
-using ASCOM.DSLR.Interfaces;
 using ASCOM.Utilities;
 using System;
 using System.Collections;
+using System.Drawing;
 using System.Linq;
 
 namespace ASCOM.DSLR
@@ -15,22 +15,22 @@ namespace ASCOM.DSLR
         {
 
         }
-        private static IDslrCamera _dslrCamera;
-        public static IDslrCamera DslrCamera
+        private static DigiCamControlCamera _DslrCamera;
+        internal static DigiCamControlCamera DslrCamera
         {
             get
             {
-                if (_dslrCamera != null && _dslrCamera.IntegrationApi != _cameraSettings.IntegrationApi)
+                if (_DslrCamera != null && _DslrCamera.IntegrationApi != _cameraSettings.IntegrationApi)
                 {
-                    _dslrCamera.Dispose();
-                    _dslrCamera = null;
+                    _DslrCamera.Dispose();
+                    _DslrCamera = null;
                 }
 
-                if (_dslrCamera == null)
+                if (_DslrCamera == null)
                 {
                     CreateCamera();
                 }
-                return _dslrCamera;
+                return _DslrCamera;
             }
         }
 
@@ -38,24 +38,7 @@ namespace ASCOM.DSLR
 
         private static void CreateCamera()
         {
-            if (_cameraSettings.IntegrationApi == ConnectionMethod.CanonSdk)
-            {
-                _dslrCamera = new CanonSdkCamera(_cameraSettings.CameraModelsHistory);
-                _dslrCamera.IsLiveViewMode = _cameraSettings.LiveViewCaptureMode;
-                _dslrCamera.LiveViewZoom = _cameraSettings.LiveViewZoom;
-            }
-            else if (_cameraSettings.IntegrationApi == ConnectionMethod.BackyardEOS)
-            {
-                _dslrCamera = new BackyardEosCamera(_cameraSettings.BackyardEosPort, _cameraSettings.CameraModelsHistory);
-            }
-            else if (_cameraSettings.IntegrationApi == ConnectionMethod.Nikon)
-            {
-                _dslrCamera = new DigiCamControlCamera(TraceLogger, _cameraSettings.CameraModelsHistory);
-            }
-            else if (_cameraSettings.IntegrationApi == ConnectionMethod.Pentax)
-            {
-                _dslrCamera = new PentaxCamera(_cameraSettings.CameraModelsHistory);
-            }
+            _DslrCamera = new DigiCamControlCamera(TraceLogger, _cameraSettings.CameraModelsHistory);
         }
 
         private static CameraSettings _cameraSettings { get; set; }
@@ -63,8 +46,8 @@ namespace ASCOM.DSLR
         public static void SetSettings(CameraSettings settings)
         {
             _cameraSettings = settings;
-            _dslrCamera?.Dispose();
-            _dslrCamera = null;
+            _DslrCamera?.Dispose();
+            _DslrCamera = null;
         }
     }
 
@@ -73,7 +56,6 @@ namespace ASCOM.DSLR
         private CameraSettingsProvider _settingsProvider;
 
         private ImageDataProcessor _imageDataProcessor;
-        private CameraStates _cameraState = CameraStates.cameraIdle;
 
         public Camera()
         {
@@ -82,16 +64,17 @@ namespace ASCOM.DSLR
 
             ReadProfile();
 
-            tl = new TraceLogger("", "DSLR");
-            tl.Enabled = CameraSettings.TraceLog;
-            connectedState = false;
+            tl = new TraceLogger("", "DSLR")
+            {
+                Enabled = CameraSettings.TraceLog
+            };
             ApiContainer.TraceLogger = tl;
 
             BinX = 1;
             BinY = 1;
         }
 
-        private void _dslrCamera_ImageReady(object sender, ImageReadyEventArgs args)
+        private void _DslrCamera_ImageReady(object sender, ImageReadyEventArgs args)
         {
             try
             {
@@ -108,7 +91,7 @@ namespace ASCOM.DSLR
                     throw new NotConnectedException("Raw reading error");
                 }
 
-                _cameraState = CameraStates.cameraIdle;
+                ApiContainer.DslrCamera.CameraState = CameraStates.cameraIdle;
                 cameraImageReady = true;
             }
             finally
@@ -131,11 +114,17 @@ namespace ASCOM.DSLR
 
         public void StartExposure(double Duration, bool Light)
         {
+            if (ApiContainer.DslrCamera.CameraState == CameraStates.cameraExposing)
+            {
+                // TODO: verify this doesn't cause unintended side effects
+                return;
+            }
+
             cameraImageReady = false;
             if (Duration < 0.0) throw new InvalidValueException("StartExposure", Duration.ToString(), "0.0 upwards");
             cameraLastExposureDuration = Duration;
             exposureStart = DateTime.Now;
-            _cameraState = CameraStates.cameraExposing;
+            ApiContainer.DslrCamera.CameraState = CameraStates.cameraExposing;
 
             if (ApiContainer.DslrCamera.IsLiveViewMode)
             {
@@ -167,7 +156,7 @@ namespace ASCOM.DSLR
         private void LvExposure(double duration)
         {
             ApiContainer.DslrCamera.LiveViewImageReady += DslrCamera_LiveViewImageReady;
-            ApiContainer.DslrCamera.StartExposure(duration, true);            
+            ApiContainer.DslrCamera.StartExposure(duration, true);
         }
 
         private void DslrCamera_LiveViewImageReady(object sender, LiveViewImageReadyEventArgs e)
@@ -178,25 +167,26 @@ namespace ASCOM.DSLR
             cameraImageArray = _imageDataProcessor.CutArray(cameraImageArray, StartX, StartY, NumX, NumY, CameraXSize, CameraYSize);
             ApiContainer.DslrCamera.LiveViewImageReady -= DslrCamera_LiveViewImageReady;
 
-            _cameraState = CameraStates.cameraIdle;
+            ApiContainer.DslrCamera.CameraState = CameraStates.cameraIdle;
             cameraImageReady = true;
         }
 
         private void SubscribeCameraEvents()
         {
-            ApiContainer.DslrCamera.ImageReady += _dslrCamera_ImageReady;
+            UnsubscribeCameraEvents();
+            ApiContainer.DslrCamera.ImageReady += _DslrCamera_ImageReady;
             ApiContainer.DslrCamera.ExposureFailed += DslrCamera_ExposureFailed;
         }
 
         private void UnsubscribeCameraEvents()
         {
-            ApiContainer.DslrCamera.ImageReady -= _dslrCamera_ImageReady;
+            ApiContainer.DslrCamera.ImageReady -= _DslrCamera_ImageReady;
             ApiContainer.DslrCamera.ExposureFailed -= DslrCamera_ExposureFailed;
         }
 
         private void DslrCamera_ExposureFailed(object sender, ExposureFailedEventArgs e)
         {
-            _cameraState = CameraStates.cameraError;
+            ApiContainer.DslrCamera.CameraState = CameraStates.cameraError;
             LogError(e.Message, e.StackTrace);
             UnsubscribeCameraEvents();
         }
@@ -209,10 +199,10 @@ namespace ASCOM.DSLR
         private void LogError(string message, string stacktrace)
         {
             tl.LogIssue(message, stacktrace);
-            _cameraState = CameraStates.cameraError;
+            ApiContainer.DslrCamera.CameraState = CameraStates.cameraError;
         }
 
-        private void SetCameraSettings(IDslrCamera camera, CameraSettings settings)
+        private void SetCameraSettings(DigiCamControlCamera camera, CameraSettings settings)
         {
             camera.Iso = Gain > 0 ? Gain : settings.Iso;
             camera.StorePath = settings.StorePath;
@@ -227,9 +217,6 @@ namespace ASCOM.DSLR
                     camera.ImageFormat = ImageFormat.JPEG;
                     break;
             }
-
-            camera.UseExternalShutter = settings.UseExternalShutter;
-            camera.ExternalShutterPort = settings.ExternalShutterPortName;
         }
 
         private void PrepareCameraImageArray(string rawFileName)
@@ -291,7 +278,7 @@ namespace ASCOM.DSLR
         {
             get
             {
-                return _cameraState;
+                return ApiContainer.DslrCamera.CameraState;
             }
         }
 
@@ -373,8 +360,8 @@ namespace ASCOM.DSLR
         public object ImageArray
         {
             get
-            {            
-                return cameraImageArray;                
+            {
+                return cameraImageArray;
             }
         }
 
@@ -390,7 +377,7 @@ namespace ASCOM.DSLR
         {
             get
             {
-                if (_cameraState == CameraStates.cameraError)
+                if (ApiContainer.DslrCamera.CameraState == CameraStates.cameraError)
                 {
                     throw new NotConnectedException(ErrorMessages.NotConnected);
                 }
@@ -515,25 +502,18 @@ namespace ASCOM.DSLR
             {
                 SensorType sensorType;
 
-                if (CameraSettings.LiveViewCaptureMode)
+                switch (CameraSettings.CameraMode)
                 {
-                    sensorType = SensorType.Monochrome;
-                }
-                else
-                {
-                    switch (CameraSettings.CameraMode)
-                    {
-                        case CameraMode.RGGB:
-                            sensorType = CameraSettings.EnableBinning ? SensorType.Monochrome : SensorType.RGGB;
-                            break;
-                        case CameraMode.Color16:
-                        case CameraMode.ColorJpg:
-                            sensorType = SensorType.Color;
-                            break;
-                        default:
-                            sensorType = SensorType.RGGB;
-                            break;
-                    }
+                    case CameraMode.RGGB:
+                        sensorType = CameraSettings.EnableBinning ? SensorType.Monochrome : SensorType.RGGB;
+                        break;
+                    case CameraMode.Color16:
+                    case CameraMode.ColorJpg:
+                        sensorType = SensorType.Color;
+                        break;
+                    default:
+                        sensorType = SensorType.RGGB;
+                        break;
                 }
 
                 return sensorType;
@@ -551,8 +531,38 @@ namespace ASCOM.DSLR
             }
         }
 
-       
+
 
         #endregion
+    }
+
+
+    public class LiveViewImageReadyEventArgs : EventArgs
+    {
+        public LiveViewImageReadyEventArgs(Bitmap data)
+        {
+            Data = data;
+        }
+        public Bitmap Data { get; private set; }
+    }
+
+    public class ImageReadyEventArgs : EventArgs
+    {
+        public ImageReadyEventArgs(string fileName)
+        {
+            RawFileName = fileName;
+        }
+        public string RawFileName { get; private set; }
+    }
+
+    public class ExposureFailedEventArgs : EventArgs
+    {
+        public ExposureFailedEventArgs(string message, string stacktrace = null)
+        {
+            Message = message;
+            StackTrace = stacktrace;
+        }
+        public string Message { get; private set; }
+        public string StackTrace { get; private set; }
     }
 }

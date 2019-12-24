@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using CameraControl.Devices.Classes;
 using PortableDeviceLib;
+using PortableDeviceLib.Model;
 
 namespace CameraControl.Devices.Nikon
 {
@@ -91,6 +93,8 @@ namespace CameraControl.Devices.Nikon
             };
         }
 
+        byte oldval = 0;
+
         protected override void InitIso()
         {
             lock (Locker)
@@ -143,6 +147,178 @@ namespace CameraControl.Devices.Nikon
                     MovieIsoNumber.IsEnabled = false;
                 }
             }
+        }
+
+        private void SlowDownEventTimer()
+        {
+            _timer.Interval = 1000 / 10;
+        }
+
+        private void SpeedUpEventTimer()
+        {
+            _timer.Interval = 1000 / 10;
+        }
+
+        public override void CapturePhotoNoAf()
+        {
+            MTPDataResponse val = null;
+            SpeedUpEventTimer();
+            lock (Locker)
+            {
+                byte oldval = 0;
+                try
+                {
+                    IsBusy = true;
+                    DeviceReady();
+                    MTPDataResponse response = ExecuteReadDataEx(CONST_CMD_GetDevicePropValue, CONST_PROP_LiveViewStatus);
+                    //ErrorCodes.GetException(response.ErrorCode);
+                    // test if live view is on 
+                    if (response.Data != null && response.Data.Length > 0 && response.Data[0] > 0)
+                    {
+                        if (CaptureInSdRam)
+                        {
+                            ErrorCodes.GetException(ExecuteWithNoData(CONST_CMD_InitiateCaptureRecInSdram, 0xFFFFFFFF));
+                            return;
+                        }
+                        else
+                        {
+                            ErrorCodes.GetException(ExecuteWithNoData(CONST_CMD_InitiateCaptureRecInMedia, 0xFFFFFFFF, 0x0000));
+                            return;
+                        }
+                        StopLiveView();
+                    }
+
+
+                    // Modified for D810 - use LockCamera before AFMode
+                    LockCamera();
+                    val = StillImageDevice.ExecuteReadData(CONST_CMD_GetDevicePropValue, CONST_PROP_AFModeSelect);
+                    ErrorCodes.GetException(val.ErrorCode);
+                    if (val.Data != null && val.Data.Length > 0)
+                        oldval = val.Data[0];
+                    SetProperty(CONST_CMD_SetDevicePropValue, new[] { (byte)4 }, CONST_PROP_AFModeSelect);
+
+                    DeviceReady();
+                    ErrorCodes.GetException(CaptureInSdRam
+                                                ? ExecuteWithNoData(CONST_CMD_InitiateCaptureRecInSdram, 0xFFFFFFFF)
+                                                : ExecuteWithNoData(CONST_CMD_InitiateCapture));
+                    //DeviceReady();
+                    //UnLockCamera(); // Perform unlock after image is read
+                }
+                catch
+                {
+                    IsBusy = false;
+                    throw;
+                }
+            }
+        }
+
+        protected override void GetEvent(object state)
+        {
+            try
+            {
+                if (_eventIsbusy)
+                    return;
+                _eventIsbusy = true;
+                DeviceReady(); // TODO: BRS added 12/7, was commented out previously
+                MTPDataResponse response = ExecuteReadDataEx(CONST_CMD_GetEvent);
+
+                if (response.Data == null || response.Data.Length == 0)
+                {
+                    Log.Debug("Get event error :" + response.ErrorCode.ToString("X"));
+                    _eventIsbusy = false;
+                    return;
+                }
+                int eventCount = BitConverter.ToInt16(response.Data, 0);
+                if (eventCount > 0)
+                {
+                    for (int i = 0; i < eventCount; i++)
+                    {
+                        bool unlockReqd = false;
+                        try
+                        {
+                            uint eventCode = BitConverter.ToUInt16(response.Data, 6 * i + 2);
+                            ushort eventParam = BitConverter.ToUInt16(response.Data, 6 * i + 4);
+                            int longeventParam = BitConverter.ToInt32(response.Data, 6 * i + 4);
+                            switch (eventCode)
+                            {
+                                case CONST_Event_DevicePropChanged:
+                                    ReadDeviceProperties(eventParam);
+                                    break;
+                                case CONST_Event_ObjectAddedInSdram:
+                                case CONST_Event_ObjectAdded:
+                                    {
+                                        unlockReqd = true;
+                                        Log.Debug("CONST_Event_ObjectAddedInSdram" + eventCode.ToString("X"));
+                                        MTPDataResponse objectdata = ExecuteReadDataEx(CONST_CMD_GetObjectInfo,
+                                                                                       (uint)longeventParam);
+                                        string filename = "DSC_0000.JPG";
+                                        if (objectdata.Data != null)
+                                        {
+                                            filename = Encoding.Unicode.GetString(objectdata.Data, 53, 12 * 2);
+                                            if (filename.Contains("\0"))
+                                                filename = filename.Split('\0')[0];
+                                        }
+                                        else
+                                        {
+                                            Log.Error("Error getting file name");
+                                        }
+                                        Log.Debug("File name" + filename);
+                                        PhotoCapturedEventArgs args = new PhotoCapturedEventArgs
+                                        {
+                                            WiaImageItem = null,
+                                            EventArgs =
+                                                new PortableDeviceEventArgs(new PortableDeviceEventType()
+                                                {
+                                                    ObjectHandle = (uint)longeventParam
+                                                }),
+                                            CameraDevice = this,
+                                            FileName = filename,
+                                            Handle = (uint)longeventParam
+                                        };
+                                        OnPhotoCapture(this, args);
+                                    }
+                                    break;
+                                case CONST_Event_CaptureComplete:
+                                case CONST_Event_CaptureCompleteRecInSdram:
+                                    {
+                                        SlowDownEventTimer();
+                                        OnCaptureCompleted(this, new EventArgs());
+                                    }
+                                    break;
+                                case CONST_Event_ObsoleteEvent:
+                                    break;
+                                default:
+                                    //Console.WriteLine("Unknown event code " + eventCode.ToString("X"));
+                                    Log.Debug("Unknown event code :" + eventCode.ToString("X") + "|" +
+                                              longeventParam.ToString("X"));
+                                    break;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            Log.Error("Event queue processing error ", exception);
+                        }
+                        finally
+                        {
+                            if (unlockReqd)
+                            {
+                                SetProperty(CONST_CMD_SetDevicePropValue, new[] { oldval }, CONST_PROP_AFModeSelect);
+                                UnLockCamera();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (InvalidComObjectException)
+            {
+                //return;
+            }
+            catch (Exception)
+            {
+                //Log.Error("Event exception ", exception);
+            }
+            _eventIsbusy = false;
+            _timer.Start();
         }
 
         private void IsoNumber_ValueChanged(object sender, string key, long val)

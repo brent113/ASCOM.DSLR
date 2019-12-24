@@ -1,21 +1,21 @@
-﻿using ASCOM.DSLR.Enums;
-using ASCOM.DSLR.Interfaces;
+﻿using ASCOM.DeviceInterface;
+using ASCOM.DSLR.Enums;
 using ASCOM.Utilities;
 using CameraControl.Devices;
 using CameraControl.Devices.Classes;
 using CameraControl.Devices.Wifi;
-using CameraControl.Plugins.ExternalDevices;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ASCOM.DSLR.Classes
 {
-    public class DigiCamControlCamera : BaseCamera, IDslrCamera
+    public class DigiCamControlCamera : BaseCamera
     {
         public string Model
         {
@@ -38,27 +38,31 @@ namespace ASCOM.DSLR.Classes
 
         public bool SupportsViewView { get { return false; } }
 
+        public CameraStates CameraState { get; set; }
+
         public event EventHandler<ImageReadyEventArgs> ImageReady;
+#pragma warning disable CS0067
         public event EventHandler<ExposureFailedEventArgs> ExposureFailed;
         public event EventHandler<LiveViewImageReadyEventArgs> LiveViewImageReady;
+#pragma warning restore CS0067
 
         private TraceLogger _tl;
 
+        private bool isConnected;
 
         public DigiCamControlCamera(TraceLogger tl, List<CameraModel> cameraModelHistory) : base(cameraModelHistory)
         {
             _tl = tl;
-            DeviceManager = new CameraDeviceManager();
-            DeviceManager.LoadWiaDevices = false;
-            DeviceManager.DetectWebcams = false;
+            DeviceManager = new CameraDeviceManager
+            {
+                LoadWiaDevices = false,
+                DetectWebcams = false
+            };
             DeviceManager.CameraSelected += DeviceManager_CameraSelected;
             DeviceManager.CameraConnected += DeviceManager_CameraConnected;
             DeviceManager.PhotoCaptured += DeviceManager_PhotoCaptured;
             DeviceManager.CameraDisconnected += DeviceManager_CameraDisconnected;
 
-            // For experimental Canon driver support- to use canon driver the canon sdk files should be copied in application folder
-            DeviceManager.UseExperimentalDrivers = true;
-            DeviceManager.DisableNativeDrivers = false;
             Log.LogError += Log_LogError;
             Log.LogDebug += Log_LogError;
             Log.LogInfo += Log_LogError;
@@ -87,17 +91,28 @@ namespace ASCOM.DSLR.Classes
 
         public void ConnectCamera()
         {
+            _ConnectCamera(true);
+        }
+
+        public void _ConnectCamera(bool validatePropertiesDatabase)
+        {
             DeviceManager.ConnectToCamera();
             var camera = DeviceManager.SelectedCameraDevice;
             LogCameraInfo(camera);
 
-            var cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == camera.DeviceName); //try get sensor params from history
-            if (cameraModel == null)
+            if (camera.DeviceName == null)
             {
-                _cameraModel = new CameraModel();
-                _cameraModel.Name = camera.DeviceName;
+                _tl.LogMessage("Nikon ConnectCamera", "No camera connected");
+                throw new NotConnectedException();
             }
 
+            // If there's not a valid model in the database, require properties to be displayed by throwing an error.
+            var cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == camera.DeviceName); //try get sensor params from history
+            if (validatePropertiesDatabase && cameraModel == null)
+            {
+                _tl.LogMessage("Nikon ConnectCamera", "Properties not set, visit properties dialog first.");
+                throw new NotConnectedException();
+            }
         }
 
         private void LogCameraInfo(ICameraDevice camera)
@@ -137,10 +152,8 @@ namespace ASCOM.DSLR.Classes
         public override CameraModel ScanCameras()
         {
             // Don't return the default fake device without connecting to something first.
-            if (DeviceManager.ConnectedDevices.Count == 0)
-            {
-                DeviceManager.ConnectToCamera();
-            }
+            if (DeviceManager.ConnectedDevices.Count == 0) { _ConnectCamera(false); }
+            if (DeviceManager.ConnectedDevices.Count == 0) { throw new NotConnectedException("Make sure the camera is connected and powered on."); }
 
             var cameraDevice = DeviceManager.SelectedCameraDevice;
             var cameraModel = GetCameraModel(cameraDevice.DeviceName);
@@ -148,8 +161,10 @@ namespace ASCOM.DSLR.Classes
             var _cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == cameraModel.Name); //try get sensor params from history
             if (_cameraModel == null)
             {
-                _cameraModel = new CameraModel();
-                _cameraModel.Name = cameraModel.Name;
+                _cameraModel = new CameraModel
+                {
+                    Name = cameraModel.Name
+                };
             }
             _cameraModel.ImageHeight = cameraModel.ImageHeight;
             _cameraModel.ImageWidth = cameraModel.ImageWidth;
@@ -161,8 +176,7 @@ namespace ASCOM.DSLR.Classes
         private double ParseValue(string valueStr)
         {
             valueStr = valueStr.Replace(',', '.');
-            double value = 0;
-            if (!double.TryParse(valueStr, out value))
+            if (!double.TryParse(valueStr, out double value))
             {
                 if (valueStr.Contains("/"))
                 {
@@ -183,19 +197,26 @@ namespace ASCOM.DSLR.Classes
 
         private string GetNearesetValue(PropertyValue<long> propertyValue, double value)
         {
-            string nearest = propertyValue.Values.Select(v =>
+            try
             {
-
-                double doubleValue = ParseValue(v);
-                return new
+                string nearest = propertyValue.Values.Select(v =>
                 {
-                    ValueStr = v,
-                    DoubleValue = doubleValue,
-                    Difference = Math.Abs(doubleValue - value)
-                };
-            }).Where(i => i.DoubleValue > 0).OrderBy(i => i.Difference).First().ValueStr;
 
-            return nearest;
+                    double doubleValue = ParseValue(v);
+                    return new
+                    {
+                        ValueStr = v,
+                        DoubleValue = doubleValue,
+                        Difference = Math.Abs(doubleValue - value)
+                    };
+                }).Where(i => i.DoubleValue > 0).OrderBy(i => i.Difference).First().ValueStr;
+
+                return nearest;
+            }
+            catch
+            {
+                throw new DriverException();
+            }
         }
 
         private string GetNearesetShutter(PropertyValue<long> propertyValue, double value)
@@ -220,34 +241,24 @@ namespace ASCOM.DSLR.Classes
         private double _duration;
         private DateTime _startTime;
 
-        public void StartExposure(double Duration, bool Light)
+        public async void StartExposure(double Duration, bool Light)
         {
             _canceled.IsCanceled = false;
 
             _startTime = DateTime.Now;
             _duration = Duration;
             var camera = DeviceManager.SelectedCameraDevice;
+            if (camera.DeviceName == null)
+            {
+                throw new NotConnectedException();
+            }
             camera.IsoNumber.Value = GetNearesetValue(camera.IsoNumber, Iso);
             camera.CompressionSetting.Value = camera.CompressionSetting.Values.SingleOrDefault(v => v.ToUpper() == "RAW");
             bool canBulb = camera.GetCapability(CapabilityEnum.Bulb);
             if (Duration > 30)
             {
                 int durationMsec = (int)(Duration * 1000);
-                if (UseExternalShutter)
-                {
-                    ThreadPool.QueueUserWorkItem(state =>
-                    {
-                        var _serialPortShutter = new SerialPortShutterRelease(ExternalShutterPort);
-                        BulbExposure(durationMsec, _canceled, _serialPortShutter.OpenShutter, _serialPortShutter.CloseShutter);
-                    });
-                }
-                else
-                {
-                    ThreadPool.QueueUserWorkItem(state =>
-                    {
-                        BulbExposure(durationMsec, _canceled, camera.StartBulbMode, camera.EndBulbMode);
-                    });
-                }
+                await Task.Run(() => BulbExposure(durationMsec, _canceled, camera.StartBulbMode, camera.EndBulbMode));
             }
             else
             {
@@ -329,20 +340,6 @@ namespace ASCOM.DSLR.Classes
             return fileName;
         }
 
-        public int ImageWidth()
-        {
-            return 1;
-        }
-
-        public int ImageHeight()
-        {
-            return 1;
-        }
-
-        void DeviceManager_CameraDisconnected(ICameraDevice cameraDevice)
-        {
-        }
-
         void DeviceManager_PhotoCaptured(object sender, PhotoCapturedEventArgs eventArgs)
         {
             PhotoCaptured(eventArgs);
@@ -350,10 +347,25 @@ namespace ASCOM.DSLR.Classes
 
         void DeviceManager_CameraConnected(ICameraDevice cameraDevice)
         {
+            isConnected = true;
+            CameraState = CameraStates.cameraIdle;
+        }
+
+        void DeviceManager_CameraDisconnected(ICameraDevice cameraDevice)
+        {
+            //DeviceManager.CloseAll();
+            isConnected = false;
+
+            CameraState = CameraStates.cameraError;
         }
 
         void DeviceManager_CameraSelected(ICameraDevice oldcameraDevice, ICameraDevice newcameraDevice)
         {
+        }
+
+        public bool IsConnected()
+        {
+            return isConnected;
         }
     }
 

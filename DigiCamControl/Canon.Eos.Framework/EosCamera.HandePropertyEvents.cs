@@ -13,30 +13,32 @@ namespace Canon.Eos.Framework
         private bool _liveMode;
         private bool _cancelLiveViewRequested;
         private bool _pauseLiveViewRequested;
+#pragma warning disable CS0414
         private bool _liveViewRunning;
+#pragma warning restore CS0414
 
         private void OnLiveViewStarted(EventArgs eventArgs)
         {
             if (this.LiveViewStarted != null)
-                this.LiveViewStarted(this, eventArgs);
+                LiveViewStarted(this, eventArgs);
         }
 
         private void OnLiveViewStopped(EventArgs eventArgs)
         {
             if (this.LiveViewStopped != null)
-                this.LiveViewStopped(this, eventArgs);
+                LiveViewStopped(this, eventArgs);
         }
 
         private void OnLiveViewPaused(EventArgs eventArgs)
         {
             if (this.LiveViewPaused != null)
-                this.LiveViewPaused(this, eventArgs);
+                LiveViewPaused(this, eventArgs);
         }
 
         private void OnLiveViewUpdate(EosLiveImageEventArgs eventArgs)
         {
             if (this.LiveViewUpdate != null)
-                this.LiveViewUpdate(this, eventArgs);            
+                LiveViewUpdate(this, eventArgs);            
         }
 
         public bool DownloadEvf()
@@ -96,7 +98,7 @@ namespace Canon.Eos.Framework
 
                 }
             }
-            catch (EosException eosEx)
+            catch (EosException)
             {
                 //if (eosEx.EosErrorCode != EosErrorCode.DeviceBusy && eosEx.EosErrorCode != EosErrorCode.ObjectNotReady)
                 //    throw;
@@ -159,8 +161,7 @@ namespace Canon.Eos.Framework
                     this.OnPropertyEventPropertyEvfOutputDeviceChanged(param, context);
                     break;
             }
-            if (PropertyChanged != null)
-                PropertyChanged(this, new EosPropertyEventArgs() {PropertyId = propertyId});
+            PropertyChanged?.Invoke(this, new EosPropertyEventArgs() { PropertyId = propertyId });
         }
 
         private void OnPropertyEventPropertyDescChanged(uint propertyId, uint param, IntPtr context)

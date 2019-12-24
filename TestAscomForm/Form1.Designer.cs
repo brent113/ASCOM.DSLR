@@ -35,6 +35,7 @@ namespace ASCOM.DSLR
             this.labelDriverId = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.buttonCapture = new System.Windows.Forms.Button();
+            this.buttonRedraw = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -47,7 +48,7 @@ namespace ASCOM.DSLR
             this.buttonChoose.TabIndex = 0;
             this.buttonChoose.Text = "Choose";
             this.buttonChoose.UseVisualStyleBackColor = true;
-            this.buttonChoose.Click += new System.EventHandler(this.buttonChoose_Click);
+            this.buttonChoose.Click += new System.EventHandler(this.ButtonChoose_Click);
             // 
             // buttonConnect
             // 
@@ -58,7 +59,7 @@ namespace ASCOM.DSLR
             this.buttonConnect.TabIndex = 1;
             this.buttonConnect.Text = "Connect";
             this.buttonConnect.UseVisualStyleBackColor = true;
-            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
+            this.buttonConnect.Click += new System.EventHandler(this.ButtonConnect_Click);
             // 
             // labelDriverId
             // 
@@ -94,13 +95,25 @@ namespace ASCOM.DSLR
             this.buttonCapture.TabIndex = 4;
             this.buttonCapture.Text = "Capture";
             this.buttonCapture.UseVisualStyleBackColor = true;
-            this.buttonCapture.Click += new System.EventHandler(this.buttonCapture_Click);
+            this.buttonCapture.Click += new System.EventHandler(this.ButtonCapture_Click);
+            // 
+            // buttonRedraw
+            // 
+            this.buttonRedraw.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonRedraw.Location = new System.Drawing.Point(412, 160);
+            this.buttonRedraw.Name = "buttonRedraw";
+            this.buttonRedraw.Size = new System.Drawing.Size(95, 40);
+            this.buttonRedraw.TabIndex = 5;
+            this.buttonRedraw.Text = "Redraw";
+            this.buttonRedraw.UseVisualStyleBackColor = true;
+            this.buttonRedraw.Click += new System.EventHandler(this.ButtonRedraw_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(523, 410);
+            this.Controls.Add(this.buttonRedraw);
             this.Controls.Add(this.buttonCapture);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.labelDriverId);
@@ -124,6 +137,7 @@ namespace ASCOM.DSLR
         private System.Windows.Forms.Label labelDriverId;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button buttonCapture;
+        private System.Windows.Forms.Button buttonRedraw;
     }
 }
 

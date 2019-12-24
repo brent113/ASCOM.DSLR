@@ -367,12 +367,6 @@ namespace CameraControl.Devices
                 PhotoCaptured(sender, eventArgs);
         }
 
-        public void OnPhotoCaptured(object sender, PhotoCapturedEventArgs eventArgs)
-        {
-            if (PhotoCaptured != null)
-                PhotoCaptured(sender, eventArgs);
-        }
-
         private void ConnectDevices()
         {
             if (_connectionInProgress)
@@ -803,7 +797,7 @@ namespace CameraControl.Devices
             foreach (IDeviceInfo devInfo in new DeviceManager().DeviceInfos)
             {
                 // Look for CameraDeviceType devices
-                string model = devInfo.Properties["Name"].get_Value();
+                string model = (string)devInfo.Properties["Name"].get_Value();
                 // skip canon cameras 
                 //if (!string.IsNullOrEmpty(model) && model.Contains("Canon"))
                 //    continue;

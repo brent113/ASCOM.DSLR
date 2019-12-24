@@ -2296,14 +2296,14 @@ namespace CameraControl.Devices.Nikon
             }
         }
 
-        private void GetEvent(object state)
+        protected virtual void GetEvent(object state)
         {
             try
             {
                 if (_eventIsbusy)
                     return;
                 _eventIsbusy = true;
-                DeviceReady(); // TODO: BRS added 12/7, was commented out previously
+                //DeviceReady();
                 MTPDataResponse response = ExecuteReadDataEx(CONST_CMD_GetEvent);
 
                 if (response.Data == null || response.Data.Length == 0)
@@ -2349,16 +2349,10 @@ namespace CameraControl.Devices.Nikon
                                         {
                                             WiaImageItem = null,
                                             EventArgs =
-                                                                                  new PortableDeviceEventArgs(new PortableDeviceEventType
-                                                                                                                  ()
-                                                                                  {
-                                                                                      ObjectHandle
-                                                                                                                          =
-                                                                                                                          (
-                                                                                                                          uint
-                                                                                                                          )
-                                                                                                                          longeventParam
-                                                                                  }),
+                                                new PortableDeviceEventArgs(new PortableDeviceEventType()
+                                                {
+                                                    ObjectHandle = (uint)longeventParam
+                                                }),
                                             CameraDevice = this,
                                             FileName = filename,
                                             Handle = (uint)longeventParam
@@ -2418,13 +2412,12 @@ namespace CameraControl.Devices.Nikon
             while (true)
             {
                 if (retrynum > 10)
-                    return;
+                    ErrorCodes.GetException(ErrorCodes.MTP_Device_Busy);
                 ulong cod = (ulong)ExecuteWithNoData(CONST_CMD_DeviceReady);
                 if (cod != 0 && cod != ErrorCodes.MTP_OK)
                 {
                     if (cod == ErrorCodes.MTP_Device_Busy || cod == 0x800700AA)
                     {
-                        Console.WriteLine("Device not ready");
                         Thread.Sleep(5);
                         retrynum++;
                     }

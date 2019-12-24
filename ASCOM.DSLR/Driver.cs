@@ -73,11 +73,6 @@ namespace ASCOM.DSLR
         public CameraSettings CameraSettings { get; private set; }
 
         /// <summary>
-        /// Private variable to hold the connected state
-        /// </summary>
-        private bool connectedState;
-
-        /// <summary>
         /// Variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
         /// </summary>
         internal TraceLogger tl;
@@ -159,21 +154,19 @@ namespace ASCOM.DSLR
         {
             get
             {
-                return IsConnected;
+                return ApiContainer.DslrCamera.IsConnected();
             }
             set
             {
-                if (value == IsConnected)
+                if (value == Connected)
                     return;
 
                 if (value)
                 {
-                    connectedState = true;
                     ApiContainer.DslrCamera.ConnectCamera();
                 }
                 else
                 {
-                    connectedState = false;
                     ApiContainer.DslrCamera.DisconnectCamera();
                 }
             }
@@ -310,24 +303,12 @@ namespace ASCOM.DSLR
         #endregion
 
         /// <summary>
-        /// Returns true if there is a valid connection to the driver hardware
-        /// </summary>
-        private bool IsConnected
-        {
-            get
-            {
-                // TODO check that the driver hardware connection exists and is connected to the hardware
-                return connectedState;
-            }
-        }
-
-        /// <summary>
         /// Use this function to throw an exception if we aren't connected to the hardware
         /// </summary>
         /// <param name="message"></param>
         private void CheckConnected(string message)
         {
-            if (!IsConnected)
+            if (!Connected)
             {
                 throw new ASCOM.NotConnectedException(message);
             }

@@ -106,24 +106,19 @@
       <DependentUpon>About.cs</DependentUpon>
     </Compile>
     <Compile Include="Camera.cs" />
-    <Compile Include="Classes\BackyardEosCamera.cs" />
     <Compile Include="Classes\BaseCamera.cs" />
     <Compile Include="Classes\CameraModelDetector.cs" />
     <Compile Include="Classes\CameraSettings.cs" />
     <Compile Include="Classes\CameraSettingsProvider.cs" />
-    <Compile Include="Classes\CanonSdkCamera.cs" />
     <Compile Include="Classes\DigiCamControlCamera.cs" />
     <Compile Include="Classes\ErrorMessages.cs" />
     <Compile Include="Classes\ExifToolWrapper.cs" />
-    <Compile Include="Classes\PentaxCamera.cs" />
-    <Compile Include="Classes\SerialPortShutterRelease.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="Enums\BinningMode.cs" />
     <Compile Include="Enums\CameraMode.cs" />
     <Compile Include="Enums\ImageFormat.cs" />
     <Compile Include="Enums\ConnectionMethod.cs" />
     <Compile Include="Enums\LiveViewZoom.cs" />
-    <Compile Include="Interfaces\IDslrCamera.cs" />
     <Compile Include="Classes\ImageDataProcessor.cs" />
     <Compile Include="Native\LibRaw.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -206,14 +201,9 @@
       <Project>{e8572d8b-c987-4d20-bd88-1f8925a64a82}</Project>
       <Name>CameraControl.Devices</Name>
     </ProjectReference>
-    <ProjectReference Include="..\EDSDKLib\EDSDKLib.csproj">
-      <Project>{15e99248-6161-46a4-9183-609ca62406a6}</Project>
-      <Name>EDSDKLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\OTelescope.API\OTelescope.API.csproj">
-      <Project>{b7e42253-59ab-4ce0-b1e7-43fc61f4cd07}</Project>
-      <Name>OTelescope.API</Name>
-    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -1,6 +1,4 @@
 ﻿using ASCOM.DSLR.Enums;
-using ASCOM.DSLR.Interfaces;
-using EOSDigital.API;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,7 +30,7 @@ namespace ASCOM.DSLR.Classes
                 return _cameraModel;
             }
         }
-        
+
         public CameraValue[] TvList;
         public CameraValue[] ISOList;
 
@@ -51,8 +49,10 @@ namespace ASCOM.DSLR.Classes
         protected string GetFileName(double duration, DateTime startTime)
         {
             duration = Math.Round(duration, 6);
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            nfi.NumberDecimalSeparator = ",";
+            NumberFormatInfo nfi = new NumberFormatInfo
+            {
+                NumberDecimalSeparator = ","
+            };
             return string.Format("IMG_{0}s_{1}iso_{2}C_{3}", duration.ToString(nfi), Iso, SensorTemperature, startTime.ToString("yyyy-MM-dd--HH-mm-ss"));
         }
 
@@ -67,8 +67,7 @@ namespace ASCOM.DSLR.Classes
             if (!string.IsNullOrEmpty(exifRecord))
             {
                 exifRecord = Regex.Replace(exifRecord, "[^0-9.-]", "");
-                int temperature;
-                if (!string.IsNullOrEmpty(exifRecord) && int.TryParse(exifRecord, out temperature))
+                if (!string.IsNullOrEmpty(exifRecord) && int.TryParse(exifRecord, out int temperature))
                 {
                     sensorTemperature = temperature;
                 }
@@ -84,14 +83,19 @@ namespace ASCOM.DSLR.Classes
 
         public CameraModel GetCameraModel(string cameraDescription)
         {
-            var cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == cameraDescription); //try get sensor params from history
-            if (cameraModel == null)
+            _cameraModel = _cameraModelsHistory.FirstOrDefault(c => c.Name == cameraDescription);
+            if (_cameraModel == null)//try get sensor params from history
             {
                 var cameraModelDetector = new CameraModelDetector(new ImageDataProcessor());
-                cameraModel = cameraModelDetector.GetCameraModel((IDslrCamera)this, StorePath);//make test shot to determine height/width
+                _cameraModel = new CameraModel() { Name = cameraDescription };
+                _cameraModel = cameraModelDetector.GetCameraModel((DigiCamControlCamera)this, StorePath);//make test shot to determine height/width
             }
 
-            return cameraModel;
+            if (_cameraModel == null)
+            {
+                throw new ASCOM.DriverException("Unable to create device model.");
+            }
+            return _cameraModel;
         }
 
         public short Iso
