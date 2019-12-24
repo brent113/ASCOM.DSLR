@@ -1,4 +1,5 @@
 ﻿using ASCOM.DSLR.Enums;
+using EOSDigital.API;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -121,24 +122,7 @@ namespace ASCOM.DSLR.Classes
 
         public ImageFormat ImageFormat { get; set; }
 
-        public List<short> IsoValues
-        {
-            get
-            {
-                List<short> result = null;
-
-                if (ISOList != null && ISOList.Any())
-                {
-                    result = ISOList.Select(i => (short)i.DoubleValue).Where(i => i > 0).ToList();
-                }
-                else
-                {
-                    result = ISOValues.Values.Where(v => v.DoubleValue < short.MaxValue && v.DoubleValue > 0).Select(v => (short)v.DoubleValue).ToList();
-                }
-
-                return result;
-            }
-        }
+        public List<short> IsoValues => ISOValues.Values.Where(v => v.DoubleValue < short.MaxValue && v.DoubleValue > 0).Select(v => (short)v.DoubleValue).ToList();
 
         public int LvFrameWidth { get; protected set; }
 

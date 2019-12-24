@@ -201,6 +201,10 @@
       <Project>{e8572d8b-c987-4d20-bd88-1f8925a64a82}</Project>
       <Name>CameraControl.Devices</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EDSDKLib\EDSDKLib.csproj">
+      <Project>{15E99248-6161-46A4-9183-609CA62406A6}</Project>
+      <Name>EDSDKLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Interfaces\" />

@@ -26,6 +26,9 @@ namespace ASCOM.DSLR
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            connectedTimer.Stop();
+            imageAcquisitionTimer.Stop();
+
             if (IsConnected)
                 driver.Connected = false;
 
@@ -88,9 +91,17 @@ namespace ASCOM.DSLR
         private void ButtonCapture_Click(object sender, EventArgs e)
         {
             int count = 0;
-            while (!IsConnected && count < 2) { ButtonConnect_Click(null, null); count++; }
-            driver.StartExposure(2.75, true);
-            imageAcquisitionTimer.Start();
+            while (!IsConnected && count < 2) {
+                ButtonConnect_Click(null, null);
+                //await System.Threading.Tasks.Task.Delay(1000); // fixes it, but cannot - sharpcap crashes
+                count++;
+            }
+
+            if (IsConnected)
+            {
+                driver.StartExposure(2.75, true);
+                imageAcquisitionTimer.Start();
+            }
         }
 
         private void ImageAcquisitionTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -111,7 +122,12 @@ namespace ASCOM.DSLR
         }
         private void ConnectedTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            SetUIState();
+            try
+            {
+                this.Invoke((MethodInvoker)(() => { SetUIState(); }));
+            }
+            catch { }
+
         }
 
         private void ShowImage()

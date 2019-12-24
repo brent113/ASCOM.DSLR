@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.IO.Ports;
+using EOSDigital.API;
 
 namespace ASCOM.DSLR
 {
